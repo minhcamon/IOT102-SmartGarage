@@ -1,0 +1,452 @@
+<!DOCTYPE html>
+<html lang="vi">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Báo cáo IOT102 - Smart Garage</title>
+    <style>
+        /* =======================================================
+           0. RESET & CẤU HÌNH CƠ BẢN
+           ======================================================= */
+        * {
+            box-sizing: border-box;
+            -webkit-print-color-adjust: exact;
+            print-color-adjust: exact;
+        }
+
+        body {
+            font-family: 'Times New Roman', Times, serif;
+            font-size: 13pt;
+            line-height: 1.5;
+            color: #000000;
+            background-color: #e0e0e0;
+            margin: 0;
+            padding: 20px 0;
+        }
+
+        /* =======================================================
+           1. BỐ CỤC TRANG (LAYOUT VÀ WRAPPER)
+           ======================================================= */
+        .a4-page {
+            width: 210mm;
+            min-height: 297mm;
+            background-color: #ffffff;
+            margin: 0 auto;
+            padding: 20mm;
+            /* Lề đều 2cm */
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+        }
+
+        .cover-page {
+            min-height: 250mm;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+        }
+
+        /* =======================================================
+           2. TYPOGRAPHY (CHỮ VÀ ĐOẠN VĂN)
+           ======================================================= */
+        h1 {
+            font-size: 18pt;
+            color: #003366;
+            text-align: center;
+            text-transform: uppercase;
+            margin-bottom: 10px;
+        }
+
+        h2 {
+            font-size: 16pt;
+            color: #003366;
+            border-bottom: 2px solid #003366;
+            padding-bottom: 5px;
+            margin-top: 30px;
+            margin-bottom: 15px;
+        }
+
+        h3 {
+            font-size: 14pt;
+            color: #000000;
+            font-weight: bold;
+            margin-top: 20px;
+            margin-bottom: 10px;
+        }
+
+        h4 {
+            font-size: 12pt;
+            color: #434343;
+            font-weight: bold;
+            margin-top: 15px;
+            margin-bottom: 8px;
+        }
+
+        p {
+            text-align: justify;
+            margin-bottom: 12px;
+        }
+
+        ul,
+        ol {
+            margin-bottom: 15px;
+            padding-left: 25px;
+        }
+
+        li {
+            margin-bottom: 5px;
+        }
+
+        code {
+            font-family: 'Courier New', Courier, monospace;
+            background-color: #f8f8f8;
+            padding: 2px 4px;
+            border-radius: 3px;
+            font-size: 11pt;
+        }
+
+        pre {
+            background-color: #f4f7f9;
+            padding: 15px;
+            border: 1px solid #ddd;
+            border-radius: 5px;
+            overflow-x: auto;
+            font-size: 11pt;
+        }
+
+        .text-center {
+            text-align: center;
+        }
+
+        /* =======================================================
+           3. COMPONENTS (BẢNG BIỂU & HÌNH ẢNH)
+           ======================================================= */
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin: 15px 0;
+        }
+
+        th,
+        td {
+            border: 1px solid #000000;
+            padding: 8px 12px;
+            text-align: left;
+            vertical-align: middle;
+        }
+
+        th {
+            background-color: #f2f2f2;
+            font-weight: bold;
+            text-align: center;
+            color: #003366;
+        }
+
+        .image-box {
+            border: 2px dashed #003366;
+            background-color: #f4f7f9;
+            text-align: center;
+            padding: 40px 20px;
+            margin: 20px 0;
+            color: #555;
+            page-break-inside: avoid;
+        }
+
+        .image-box p {
+            font-size: 11pt;
+            color: #3a3a3a;
+            text-align: center;
+            margin-top: 20px;
+            font-style: italic;
+        }
+
+        /* =======================================================
+           4. UTILITY CLASSES (LỆNH ĐIỀU KHIỂN RIÊNG & IN ẤN)
+           ======================================================= */
+        .section-header {
+            page-break-before: always !important;
+            break-before: page !important;
+            margin-top: 0;
+        }
+
+        @page {
+            size: A4 portrait;
+            margin: 20mm;
+        }
+
+        @media print {
+            body {
+                background-color: #ffffff;
+                padding: 0;
+            }
+
+            .a4-page {
+                width: 100%;
+                min-height: auto;
+                margin: 0;
+                padding: 0;
+                box-shadow: none;
+            }
+
+            p {
+                orphans: 3;
+                widows: 3;
+            }
+
+            h2,
+            h3,
+            h4 {
+                page-break-after: avoid;
+                break-after: avoid;
+                page-break-inside: avoid;
+            }
+
+            h2+table,
+            h3+table,
+            h4+table,
+            h2+.image-box,
+            h3+.image-box,
+            h4+.image-box {
+                page-break-before: avoid;
+                break-before: avoid;
+            }
+
+            table {
+                page-break-inside: auto;
+                break-inside: auto;
+            }
+
+            tr,
+            td,
+            th {
+                page-break-inside: avoid;
+                break-inside: avoid;
+            }
+
+            thead {
+                display: table-header-group;
+            }
+
+            .image-box {
+                border: 1px solid #ddd;
+            }
+
+            /* Đổi viền đứt thành viền liền mờ khi in */
+        }
+    </style>
+</head>
+
+<body>
+
+    <div class="a4-page">
+
+        <div class="cover-page">
+            <h1>PROJECT IOT102</h1>
+            <h2 style="text-align: center; border: none; margin-top: 0; padding-bottom: 40px;">
+                Project name: Smart Garage<br>
+            </h2>
+
+            <div style="margin-bottom: 60px; font-size: 14pt; padding-left: 20%;">
+                <p style="margin: 5px 0;"><strong>Class:</strong> SE2023</p>
+                <p style="margin: 5px 0;"><strong>Group:</strong> 6</p>
+                <br>
+                <table style="width: 80%; margin: 0; border: none;">
+                    <tr style="border: none;">
+                        <td style="border: none; padding: 5px 0; width: 60%;">1. Nguyễn Nhật Minh</td>
+                        <td style="border: none; padding: 5px 0; width: 40%;">HE200247</td>
+                    </tr>
+                    <tr style="border: none;">
+                        <td style="border: none; padding: 5px 0;">2. Nguyễn Đặng Minh Vũ</td>
+                        <td style="border: none; padding: 5px 0;">HE200317</td>
+                    </tr>
+                    <tr style="border: none;">
+                        <td style="border: none; padding: 5px 0;">3. Nguyễn Lê Minh</td>
+                        <td style="border: none; padding: 5px 0;">HE200305</td>
+                    </tr>
+                </table>
+            </div>
+        </div>
+
+        <div class="section-header">
+            <h2 style="margin-top: 0;">I. Introduction</h2>
+
+            <h3>1. Reasons for choosing the project</h3>
+            <p><em>Context & Problem: Traditional garage doors lack remote monitoring and automated safety features,
+                    posing risks of door jamming, property damage, and unauthorized access.
+                    <br>
+                    <br>
+                    Proposed Solution: This project aims to build a comprehensive Smart Garage system. By integrating
+                    physical security (RFID), operational safety (ultrasonic anti-pinching), and a real-time Web
+                    Dashboard (ReactJS & MQTT), the system provides users with seamless, secure, and remote management
+                    of their parking spaces.</em></p>
+
+            <h3>2. Project Objective</h3>
+            <p><em>General Objective:
+                    To design and implement a stable Smart Garage model featuring real-time data synchronization between
+                    the physical hardware (ESP32) and a digital Web Application via the Internet.
+                    <br>
+                    <br>
+                    Specific Objectives:
+
+                    Hardware (IoT): Develop a central control system capable of RFID authentication, providing local
+                    OLED/Buzzer alerts, and utilizing an ultrasonic sensor for automatic anti-pinching (Emergency stop).
+                    <br>
+                    Software (Web Dashboard): Build a responsive ReactJS interface for real-time status monitoring,
+                    remote door operation, and high-level security management (Master Lock feature).</em></p>
+        </div>
+
+        <div class="section-header">
+            <h2 style="margin-top: 0;">II. Content</h2>
+
+            <h3>1. Block diagram (Sơ đồ khối)</h3>
+            <p>Dưới đây là sơ đồ khối tổng quát của hệ thống Smart Garage, thể hiện sự kết nối và vai trò xử lý của từng
+                khối chức năng:</p>
+            <div class="image-box">
+                <p><em>[Chèn thẻ &lt;img src="..." alt="Block Diagram"&gt; tại đây]</em></p>
+                <p>Hình 1. Sơ đồ khối của hệ thống Smart Garage</p>
+            </div>
+            <ul>
+                <li><strong>Khối điều khiển trung tâm (ESP32):</strong> Nhận và xử lý dữ liệu từ các cảm biến, điều
+                    khiển thiết bị đầu ra.</li>
+                <li><strong>Khối đầu vào (Input):</strong> Bao gồm cảm biến siêu âm HC-SR04, module đọc thẻ RFID RC522,
+                    và nút nhấn (Press button).</li>
+                <li><strong>Khối đầu ra (Output):</strong> Bao gồm màn hình OLED, Servo đóng/mở cổng, LED và còi Buzzer.
+                </li>
+            </ul>
+
+            <h3>2. Hardware Required (Linh Kiện)</h3>
+            <p>Danh sách các thiết bị phần cứng được sử dụng trong dự án:</p>
+            <table>
+                <thead>
+                    <tr>
+                        <th width="10%">STT</th>
+                        <th width="30%">Component</th>
+                        <th width="60%">Description / Function</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        <td class="text-center">1</td>
+                        <td><strong>ESP32</strong></td>
+                        <td>Vi điều khiển trung tâm, xử lý logic và kết nối WiFi/Bluetooth.</td>
+                    </tr>
+                    <tr>
+                        <td class="text-center">2</td>
+                        <td><strong>OLED SSD1306</strong></td>
+                        <td>Màn hình hiển thị trạng thái (cửa mở/đóng, số chỗ trống).</td>
+                    </tr>
+                    <tr>
+                        <td class="text-center">3</td>
+                        <td><strong>HC-SR04</strong></td>
+                        <td>Cảm biến siêu âm phát hiện khoảng cách/có xe hay không.</td>
+                    </tr>
+                    <tr>
+                        <td class="text-center">4</td>
+                        <td><strong>MRC522-RFID</strong></td>
+                        <td>Module đọc thẻ từ RFID để kiểm soát xe ra vào.</td>
+                    </tr>
+                    <tr>
+                        <td class="text-center">5</td>
+                        <td><strong>Servo Motor</strong></td>
+                        <td>Động cơ điều khiển việc đóng và mở thanh chắn cổng (Barie).</td>
+                    </tr>
+                    <tr>
+                        <td class="text-center">6</td>
+                        <td><strong>LED</strong></td>
+                        <td>Đèn báo hiệu trạng thái hoạt động.</td>
+                    </tr>
+                    <tr>
+                        <td class="text-center">7</td>
+                        <td><strong>Buzzer</strong></td>
+                        <td>Còi chíp báo hiệu âm thanh khi quẹt thẻ hoặc cảnh báo.</td>
+                    </tr>
+                    <tr>
+                        <td class="text-center">8</td>
+                        <td><strong>Press button x2</strong></td>
+                        <td>Nút nhấn vật lý để điều khiển thủ công hoặc reset hệ thống.</td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+
+        <div class="section-header">
+            <h2 style="margin-top: 0;">II. Content (Tiếp tục)</h2>
+
+            <h3>3. Schematic (Sơ đồ nguyên lý)</h3>
+            <div class="image-box">
+                <p><em>[Chèn ảnh sơ đồ nguyên lý nối dây Schematic tại đây]</em></p>
+                <p>Hình 2. Sơ đồ nguyên lý kết nối các linh kiện với ESP32</p>
+            </div>
+
+            <h3>4. Electronic circuit (Mạch điện tử)</h3>
+            <p>Mạch mô phỏng trên phần mềm hoặc hình ảnh thực tế của bảng mạch (PCB/Breadboard):</p>
+            <div class="image-box">
+                <p><em>[Chèn ảnh mạch điện tử mô phỏng/thực tế tại đây]</em></p>
+                <p>Hình 3. Mạch điện tử hệ thống Smart Garage</p>
+            </div>
+
+            <h3>5. Flow chart (Lưu đồ thuật toán)</h3>
+            <p>Lưu đồ giải thuật của hàm <code>void loop()</code> xử lý logic chính của hệ thống:</p>
+            <div class="image-box">
+                <p><em>[Chèn ảnh Flow chart vẽ từ diagrams.net tại đây]</em></p>
+                <p>Hình 4. Lưu đồ thuật toán (Flow chart) của hệ thống</p>
+            </div>
+
+            <h3>6. Demo</h3>
+            <p>Hình ảnh thực tế khi hệ thống đang vận hành và tương tác với các thiết bị ngoại vi.</p>
+            <div class="image-box">
+                <p><em>[Chèn ảnh Demo sản phẩm thực tế tại đây]</em></p>
+                <p>Hình 5. Chạy thử nghiệm Demo sản phẩm</p>
+            </div>
+        </div>
+
+        <div class="section-header">
+            <h2 style="margin-top: 0;">III. Experiment</h2>
+
+            <h3>1. Prototype implementation results</h3>
+            <p><em>[Nêu kết quả triển khai phần cứng, mô hình thực tế đã hàn nối/lắp ráp xong như thế nào, có đáp ứng
+                    thẩm mỹ và độ chắc chắn không...]</em></p>
+
+            <h3>2. Functional results of the system</h3>
+            <p><em>[Liệt kê kết quả các chức năng: Quẹt thẻ đúng thì servo mở, OLED hiện lời chào. Quẹt sai thì Buzzer
+                    kêu. Cảm biến siêu âm nhận diện xe cách bao nhiêu cm...]</em></p>
+
+            <h3>3. Conclude</h3>
+            <p><em>[Kết luận hệ thống đã đạt được những gì so với mục tiêu đề ra ban đầu ở phần I. Nêu hướng phát triển
+                    tương lai như tích hợp app điện thoại, lưu data lên database...]</em></p>
+        </div>
+
+        <div class="section-header">
+            <h2 style="margin-top: 0;">IV. Appendix</h2>
+
+            <h3>1. Links</h3>
+            <ul>
+                <li><strong>Link mô phỏng (Wokwi/Proteus...):</strong> <a href="#">[Chèn link mô phỏng của bạn vào
+                        đây]</a></li>
+                <li><strong>Link Video Demo:</strong> <a href="#">[Chèn link Youtube/Drive video demo]</a></li>
+            </ul>
+
+            <h3>2. Code Snippets</h3>
+            <p>Đoạn mã code chính xử lý logic cho hệ thống:</p>
+            <pre><code>// Include thư viện cần thiết
+#include &lt;SPI.h&gt;
+#include &lt;MFRC522.h&gt;
+#include &lt;ESP32Servo.h&gt;
+// ... (Copy/Paste đoạn code chính của nhóm vào đây)
+
+void setup() {
+  Serial.begin(115200);
+  // Khởi tạo các chân GPIO, LCD, RFID...
+}
+
+void loop() {
+  // Logic kiểm tra thẻ RFID
+  // Logic kiểm tra cảm biến khoảng cách HC-SR04
+  // Cập nhật hiển thị OLED
+}
+</code></pre>
+        </div>
+
+    </div>
+</body>
+
+</html>
