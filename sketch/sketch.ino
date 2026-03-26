@@ -5,9 +5,10 @@
 #include <MFRC522.h>
 #include <ESP32Servo.h>
 #include <WiFi.h>
-#include <WiFiClientSecure.h> // BẮT BUỘC dùng Secure cho HiveMQ Cloud
+#include <WiFiClientSecure.h>
 #include <PubSubClient.h>
 #include <Preferences.h>
+
 #include "setup.h"
 
 // ================= MACROS & PINS =================
@@ -16,7 +17,7 @@
 #define SERVO_PIN 13
 
 #define TRIG_PIN 16
-#define ECHO_PIN 2
+#define ECHO_PIN 17
 
 #define BTN_TOGGLE_PIN 25
 #define BTN_LOCK_PIN 26
@@ -27,27 +28,27 @@
 #define SCREEN_WIDTH 128
 #define SCREEN_HEIGHT 64
 
-#define ANGLE_CLOSED 10
-#define ANGLE_OPENED 170
+#define ANGLE_CLOSED 90
+#define ANGLE_OPENED 10
 
 // ================= NETWORK CONFIG =================
 const char* ssid = WIFI_SSID;
 const char* password = WIFI_PASSWORD;
 const char* mqtt_server = MQTT_SERVER;
-const int mqtt_port = MQTT_PORT; // Chuyển từ 1883 sang 8883 cho TLS
+const int mqtt_port = MQTT_PORT; 
 const char* mqtt_user = MQTT_USER;
 const char* mqtt_pass = MQTT_PASS; 
 const char* mqtt_topic_status = "garage/status";
 const char* mqtt_topic_cmd = "garage/command";
-
 // ================= GLOBAL OBJECTS =================
 MFRC522 rfid(SS_PIN, RST_PIN);
 Adafruit_SSD1306 oled(SCREEN_WIDTH, SCREEN_HEIGHT, &Wire, -1);
 Servo doorServo;
-WiFiClientSecure espClient; // Đổi sang kết nối bảo mật bằng SSL/TLS
+WiFiClientSecure espClient; 
 PubSubClient client(espClient);
-Preferences preferences;
 
+
+Preferences preferences;
 // ================= STATES =================
 enum DoorState {
   DOOR_CLOSED,
@@ -122,9 +123,10 @@ void setup() {
   Serial.println("SMART GARAGE READY");
 
   setup_wifi();
-  espClient.setInsecure(); // QUAN TRỌNG: Bỏ qua check chứng chỉ SSL cho ESP32 đỡ nặng
+  espClient.setInsecure(); 
   client.setServer(mqtt_server, mqtt_port);
   client.setCallback(mqttCallback);
+
 }
 
 // ================= LOOP =================
@@ -137,6 +139,8 @@ void loop() {
     updateOLED("LEARN TIMEOUT", doorStateToString(currentDoorState));
     beep(200); delay(100); beep(200);
   }
+
+  
 
   // 1. NETWORK & MQTT
   handleNetwork(now);
@@ -162,10 +166,10 @@ void loop() {
   // 6. SYNC TO WEB
   if (client.connected()) {
     if (currentDoorState != oldDoorState || isHardLocked != oldLockState) {
-      publishStatusToWeb(true);
+      publishStatusToAll(true);
       Serial.println("[ĐỒNG BỘ WEB] Phát hiện thay đổi vật lý -> Báo cáo tức thời!");
     } else {
-      publishStatusToWeb(false);
+      publishStatusToAll(false);
     }
   }
 }
@@ -246,13 +250,11 @@ void readLockSwitch(unsigned long now) {
     if (currentState) {
       lastLockTime = now;
       if (isLearningCard) {
-        // Cú nhấn này chỉ để hủy chế độ đổi thẻ (Cancel Learning)
         isLearningCard = false;
         Serial.println("LEARN MODE CANCELLED");
         updateOLED("LEARN CANCELLED", doorStateToString(currentDoorState));
         beep(200);
       } else {
-        // Nút Khóa hoạt động như bình thường
         if (isHardLocked || isPendingLock) requestUnlock();
         else requestLock();
       }
@@ -332,24 +334,36 @@ void safetyCheck() {
   }
 }
 
+//==== SERVO =========
 void runServo(unsigned long now) {
-  if (now - lastServoTime < 15) return;
+  // 1. THIẾT LẬP TỐC ĐỘ
+  unsigned long currentDelay = 15; 
+  
+  if (currentDoorState == DOOR_OPENING) {
+    currentDelay = 30; 
+  } else if (currentDoorState == DOOR_EMERGENCY) {
+    currentDelay = 5;  
+  }
+
+  if (now - lastServoTime < currentDelay) return;
   lastServoTime = now;
 
   switch (currentDoorState) {
+
     case DOOR_OPENING:
-      currentAngle++;
-      if (currentAngle >= ANGLE_OPENED) {
+      currentAngle -= 1; 
+      if (currentAngle <= ANGLE_OPENED) { 
         currentAngle = ANGLE_OPENED;
         currentDoorState = DOOR_OPENED;
-        if (!isHardLocked) updateOLED("ACCESS GRANTED", "Door: OPENED");
+        if (!isHardLocked)
+          updateOLED("ACCESS GRANTED", "Door: OPENED");
       }
       doorServo.write(currentAngle);
       break;
 
     case DOOR_CLOSING:
-      currentAngle--;
-      if (currentAngle <= ANGLE_CLOSED) {
+      currentAngle += 1; 
+      if (currentAngle >= ANGLE_CLOSED) { 
         currentAngle = ANGLE_CLOSED;
         currentDoorState = DOOR_CLOSED;
 
@@ -367,8 +381,8 @@ void runServo(unsigned long now) {
       break;
 
     case DOOR_EMERGENCY:
-      currentAngle += 2;
-      if (currentAngle >= ANGLE_OPENED) {
+      currentAngle -= 3;
+      if (currentAngle <= ANGLE_OPENED) {
         currentAngle = ANGLE_OPENED;
         currentDoorState = DOOR_OPENED;
       }
@@ -421,17 +435,11 @@ String getWebDoorState(DoorState state) {
 
 // ================= NETWORK & MQTT =================
 void handleNetwork(unsigned long now) {
+  // Quản lý HiveMQ (Web)
   if (WiFi.status() == WL_CONNECTED) {
-    if (!client.connected()) {
-      if (now - lastReconnectAttempt > 5000) {
-        lastReconnectAttempt = now;
-        if (reconnectMQTT()) {
-          lastReconnectAttempt = 0;
-        }
-      }
-    } else {
-      client.loop();
-    }
+    if (!client.connected()) reconnectMQTT(); 
+    else client.loop();
+
   }
 }
 
@@ -463,7 +471,6 @@ bool reconnectMQTT() {
   String clientId = "ESP32Garage-Minh-";
   clientId += String(random(0xffff), HEX);
 
-  // Kết nối HiveMQ Cloud có truyền auth credentials
   if (client.connect(clientId.c_str(), mqtt_user, mqtt_pass)) {
     Serial.println(" SUCCESS!");
     client.subscribe(mqtt_topic_cmd);
@@ -474,6 +481,8 @@ bool reconnectMQTT() {
     return false;
   }
 }
+
+
 
 void mqttCallback(char* topic, byte* payload, unsigned int length) {
   String message;
@@ -486,7 +495,7 @@ void mqttCallback(char* topic, byte* payload, unsigned int length) {
     else if (message == "CLOSE") requestCloseDoor("Web Command");
     else if (message == "TOGGLE") requestToggleDoor("Web Command");
     else if (message.startsWith("LEARN_CARD:")) {
-      // BƯỚC AUTH 2: TIN NHẮN TỪ WEB PHẢI KÈM MẬT KHẨU "123456"
+
       String password = message.substring(11);
       if (password == "123456") {
         isLearningCard = true;
@@ -503,6 +512,8 @@ void mqttCallback(char* topic, byte* payload, unsigned int length) {
   }
 }
 
+
+
 void publishStatusToWeb(bool force) {
   unsigned long now = millis();
   if (force || now - lastPublishTime > 500) {
@@ -515,4 +526,10 @@ void publishStatusToWeb(bool force) {
 
     client.publish(mqtt_topic_status, payload.c_str());
   }
+}
+
+
+void publishStatusToAll(bool force) {
+  publishStatusToWeb(force);
+
 }
